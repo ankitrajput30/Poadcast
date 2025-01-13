@@ -118,7 +118,7 @@ const Profile = () => {
     const { currentUser } = useSelector(state => state.user);
     const [name, setName] = useState("");
 
-    const token = localStorage.getItem("podstreamtoken");
+    const token = localStorage.getItem("mypodtoken");
     const getUser = async () => {
         await getUsers(token).then((res) => {
             setUser(res.data)

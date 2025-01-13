@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit"
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   currentUser: null,
@@ -16,7 +16,7 @@ export const userSlice = createSlice({
     loginSuccess: (state, action) => {
       state.loading = false;
       state.currentUser = action.payload.user;
-      localStorage.setItem('podstreamtoken', action.payload.token);
+      localStorage.setItem("mypodtoken", action.payload.token);
     },
     loginFailure: (state) => {
       state.loading = false;
@@ -26,10 +26,11 @@ export const userSlice = createSlice({
       state.currentUser = null;
       state.loading = false;
       state.error = false;
-      localStorage.removeItem('token');
+      // ✅ Fixed token removal to match the new key
+      localStorage.removeItem("mypodtoken");
     },
     verified: (state, action) => {
-      if(state.currentUser){
+      if (state.currentUser) {
         state.currentUser.verified = action.payload;
       }
     },
@@ -52,7 +53,14 @@ export const userSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout, displayPodcastFailure, subscription,verified } =
-  userSlice.actions;
+export const {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  displayPodcastFailure,
+  subscription,
+  verified,
+} = userSlice.actions;
 
 export default userSlice.reducer;
