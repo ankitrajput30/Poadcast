@@ -20,6 +20,8 @@ import AudioPlayer from "./components/AudioPlayer.jsx";
 import VideoPlayer from "./components/VideoPlayer.jsx";
 import PodcastDetails from "./pages/PodcastDetails.jsx";
 import { closeSignin } from "./redux/setSigninSlice.jsx";
+import ContextProvider from "./context/ContextProvider.jsx";
+// import Episodes from "./components/Episodes.jsx";
 
 const Frame = styled.div`
   display: flex;
@@ -71,6 +73,7 @@ function App() {
 
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+      <ContextProvider>
       <BrowserRouter>
         {opensi && (
           <Signin setSignInOpen={setSignInOpen} setSignUpOpen={setSignUpOpen} />
@@ -135,6 +138,7 @@ function App() {
           )}
         </Podstream>
       </BrowserRouter>
+      </ContextProvider>
     </ThemeProvider>
   );
 }

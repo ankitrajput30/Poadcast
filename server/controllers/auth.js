@@ -7,7 +7,6 @@ import nodemailer from "nodemailer";
 import dotenv from 'dotenv';
 import otpGenerator from 'otp-generator';
 
-
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
@@ -105,7 +104,7 @@ export const logout = (req, res) => {
     res.clearCookie("access_token").json({ message: "Logged out" });
 }
 
-export const generateOTP = async (req, res) => {
+export const generateOTP = async (req, res, next) => {
     req.app.locals.OTP = await otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false, digits: true, });
     const { email } = req.query;
     const { name } = req.query;

@@ -164,7 +164,9 @@ const OTP = ({ email, name, otpVerified, setOtpVerified, reason }) => {
     }
 
     const sendOtp = async () => {
+        debugger;
         await generateOtp(email, name, reason).then((res) => {
+            
             if (res.status === 200) {
                 dispatch(
                     openSnackbar({

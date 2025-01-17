@@ -10,12 +10,14 @@ import userRoutes from './routes/user.js';
 
 const app = express();
 dotenv.config();
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 /** Middlewares */
 app.use(express.json());
 const corsConfig = {
+    origin: "http://localhost:5173",
     credentials: true,
-    origin: true,
 };
 app.use(cors(corsConfig));
 
@@ -51,6 +53,6 @@ app.use((err, req, res, next) => {
 })
 
 app.listen(port, () => {
-    console.log("Connected")
+    console.log("Connected :",port)
     connect();
 })

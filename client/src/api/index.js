@@ -2,7 +2,7 @@ import axios from "axios";
 import jwt_decode from "jwt-decode";
 //https://podstream.onrender.com/api
 // const API = axios.create({ baseURL: `https://podstream-giym.onrender.com/api` });
-const API = axios.create({ baseURL: `http://localhost:8080//api` });
+const API = axios.create({ baseURL: `http://localhost:8080/api` });
 
 //auth
 export const signIn = async ({ email, password }) =>
@@ -46,14 +46,28 @@ export const searchUsers = async (search, token) =>
     { withCredentials: true }
   );
 
+//delete Episode
+export const deleteEpisode = async (episodeId, token) => {
+  try {
+    const response = await API.delete(`/podcasts/deleteEpisode/${episodeId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      withCredentials: true,
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 //podcast api
 export const createPodcast = async (podcast, token) =>
-  await API.post(
-    "/podcasts",
-    podcast,
-    { headers: { Authorization: `Bearer ${token}` } },
-    { withCredentials: true }
-  );
+  await API.post("/podcasts", podcast, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    withCredentials: true, // Allows cookies and credentials
+  });
 export const getPodcasts = async () => await API.get("/podcasts");
 export const addEpisodes = async (podcast, token) =>
   await API.post(

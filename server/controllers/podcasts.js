@@ -4,196 +4,255 @@ import Podcasts from "../models/Podcasts.js";
 import Episodes from "../models/Episodes.js";
 import User from "../models/User.js";
 
-
 export const createPodcast = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.user.id);
+  console.log("123", req);
+  try {
+    const user = await User.findById(req.user.id);
 
-        let episodeList = []
-        await Promise.all(req.body.episodes.map(async (item) => {
+    let episodeList = [];
+    await Promise.all(
+      req.body.episodes.map(async (item) => {
+        const episode = new Episodes({ creator: user.id, ...item });
+        const savedEpisode = await episode.save();
+        episodeList.push(savedEpisode._id);
+      })
+    );
 
-            const episode = new Episodes(
-                { creator: user.id, ...item }
-            );
-            const savedEpisode = await episode.save();
-            episodeList.push(savedEpisode._id)
-        }));
+    // Create a new podcast
+    const podcast = new Podcasts({
+      creator: user.id,
+      episodes: episodeList,
+      name: req.body.name,
+      desc: req.body.desc,
+      thumbnail: req.body.thumbnail,
+      tags: req.body.tags,
+      type: req.body.type,
+      category: req.body.category,
+    });
+    const savedPodcast = await podcast.save();
 
-        // Create a new podcast
-        const podcast = new Podcasts(
-            {
-                creator: user.id, episodes: episodeList,
-                name: req.body.name,
-                desc: req.body.desc,
-                thumbnail: req.body.thumbnail,
-                tags: req.body.tags,
-                type: req.body.type,
-                category: req.body.category
-            }
-        );
-        const savedPodcast = await podcast.save();
+    //save the podcast to the user
+    await User.findByIdAndUpdate(
+      user.id,
+      {
+        $push: { podcasts: savedPodcast.id },
+      },
+      { new: true }
+    );
 
-        //save the podcast to the user
-        await User.findByIdAndUpdate(user.id, {
-            $push: { podcasts: savedPodcast.id },
-
-        }, { new: true });
-
-        res.status(201).json(savedPodcast);
-    } catch (err) {
-        next(err);
-    }
+    res.status(201).json(savedPodcast);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const addepisodes = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.user.id);
+  try {
+    const user = await User.findById(req.user.id);
 
-        await Promise.all(req.body.episodes.map(async (item) => {
+    await Promise.all(
+      req.body.episodes.map(async (item) => {
+        const episode = new Episodes({ creator: user.id, ...item });
+        const savedEpisode = await episode.save();
 
-            const episode = new Episodes(
-                { creator: user.id, ...item }
-            );
-            const savedEpisode = await episode.save();
+        // update the podcast
+        await Podcasts.findByIdAndUpdate(
+          req.body.podid,
+          {
+            $push: { episodes: savedEpisode.id },
+          },
+          { new: true }
+        );
+      })
+    );
 
+    res.status(201).json({ message: "Episode added successfully" });
+  } catch (err) {
+    next(err);
+  }
+};
 
-            // update the podcast
-            await Podcasts.findByIdAndUpdate(
-                req.body.podid, {
-                $push: { episodes: savedEpisode.id },
+// DELETE A SPECIFIC EPISODE (Restricted to Creator Only & Auto-Delete Podcast if Empty)
+export const deleteEpisode = async (req, res) => {
+  try {
+    const episodeId = req.params.id;
+    const { podid } = req.body;
+    const userId = req.user.userId; // Extracted from the token using verifyToken middleware
+   
+    // Check if the episode exists
+    // const episode = await Episodes.findById(episodeId);
+    // if (!episode) {
+    //   return res.status(404).json({ message: "Episode not found" });
+    // }
+    // Check if the current user is the creator of the episode
+    // if (episode.creator.toString() !== userId) {
+    //   return res
+    //     .status(403)
+    //     .json({ message: "You are not authorized to delete this episode." });
+    // }
 
-            }, { new: true }
-            )
-        }));
+    // Delete the episode from the Episodes collection
+    await Episodes.findByIdAndDelete(episodeId);
 
-        res.status(201).json({ message: "Episode added successfully" });
+    // Remove the episode from the Podcast's episodes array
+    const updatedPodcast = await Podcasts.findByIdAndUpdate(
+      podid,
+      { $pull: { episodes: episodeId } },
+      { new: true } // Return the updated podcast
+    );
 
-    } catch (err) {
-        next(err);
-    }
-}
+    // **Check if the podcast is empty and delete if it has no episodes left**
+    // if (updatedPodcast.episodes.length === 0) {
+    //   await Podcasts.findByIdAndDelete(podid);
+    //   return res.status(200).json({
+    //     message: "Episode deleted and empty podcast removed successfully",
+    //   });
+    // }
 
-
+    res.status(200).json({ message: "Episode deleted successfully",status:true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const getPodcasts = async (req, res, next) => {
-    try {
-        // Get all podcasts from the database
-        const podcasts = await Podcasts.find().populate("creator", "name img").populate("episodes");
-        return res.status(200).json(podcasts);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    // Get all podcasts from the database
+    const podcasts = await Podcasts.find()
+      .populate("creator", "name img")
+      .populate("episodes");
+    return res.status(200).json(podcasts);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const getPodcastById = async (req, res, next) => {
-    try {
-        // Get the podcasts from the database
-        const podcast = await Podcasts.findById(req.params.id).populate("creator", "name img").populate("episodes");
-        return res.status(200).json(podcast);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    // Get the podcasts from the database
+    const podcast = await Podcasts.findById(req.params.id)
+      .populate("creator", "name img")
+      .populate("episodes");
+    return res.status(200).json(podcast);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const favoritPodcast = async (req, res, next) => {
-    // Check if the user is the creator of the podcast
-    const user = await User.findById(req.user.id);
-    const podcast = await Podcasts.findById(req.body.id);
-    let found = false;
-    if (user.id === podcast.creator) {
-        return next(createError(403, "You can't favorit your own podcast!"));
-    }
+  // Check if the user is the creator of the podcast
+  const user = await User.findById(req.user.id);
+  const podcast = await Podcasts.findById(req.body.id);
+  let found = false;
+  if (user.id === podcast.creator) {
+    return next(createError(403, "You can't favorit your own podcast!"));
+  }
 
-    // Check if the podcast is already in the user's favorits
-    await Promise.all(user.favorits.map(async (item) => {
-        if (req.body.id == item) {
-            //remove from favorite
-            found = true;
-            console.log("this")
-            await User.findByIdAndUpdate(user.id, {
-                $pull: { favorits: req.body.id },
+  // Check if the podcast is already in the user's favorits
+  await Promise.all(
+    user.favorits.map(async (item) => {
+      if (req.body.id == item) {
+        //remove from favorite
+        found = true;
+        console.log("this");
+        await User.findByIdAndUpdate(
+          user.id,
+          {
+            $pull: { favorits: req.body.id },
+          },
+          { new: true }
+        );
+        res.status(200).json({ message: "Removed from favorit" });
+      }
+    })
+  );
 
-            }, { new: true })
-            res.status(200).json({ message: "Removed from favorit" });
+  if (!found) {
+    await User.findByIdAndUpdate(
+      user.id,
+      {
+        $push: { favorits: req.body.id },
+      },
+      { new: true }
+    );
+    res.status(200).json({ message: "Added to favorit" });
+  }
+};
 
-        }
-    }));
-
-
-    if (!found) {
-        await User.findByIdAndUpdate(user.id, {
-            $push: { favorits: req.body.id },
-
-        }, { new: true });
-        res.status(200).json({ message: "Added to favorit" });
-    }
-}
-
-//add view 
+//add view
 
 export const addView = async (req, res, next) => {
-    try {
-      await Podcasts.findByIdAndUpdate(req.params.id, {
-        $inc: { views: 1 },
-      });
-      res.status(200).json("The view has been increased.");
-    } catch (err) {
-      next(err);
-    }
-  };
-  
-
+  try {
+    await Podcasts.findByIdAndUpdate(req.params.id, {
+      $inc: { views: 1 },
+    });
+    res.status(200).json("The view has been increased.");
+  } catch (err) {
+    next(err);
+  }
+};
 
 //searches
 export const random = async (req, res, next) => {
-    try {
-        const podcasts = await Podcasts.aggregate([{ $sample: { size: 40 } }]).populate("creator", "name img").populate("episodes");
-        res.status(200).json(podcasts);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const podcasts = await Podcasts.aggregate([{ $sample: { size: 40 } }])
+      .populate("creator", "name img")
+      .populate("episodes");
+    res.status(200).json(podcasts);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const mostpopular = async (req, res, next) => {
-    try {
-        const podcast = await Podcasts.find().sort({ views: -1 }).populate("creator", "name img").populate("episodes");
-        res.status(200).json(podcast);
-    } catch (err) {
-        next(err);
-    }
+  try {
+    const podcast = await Podcasts.find()
+      .sort({ views: -1 })
+      .populate("creator", "name img")
+      .populate("episodes");
+    res.status(200).json(podcast);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const getByTag = async (req, res, next) => {
-    const tags = req.query.tags.split(",");
-    try {
-        const podcast = await Podcasts.find({ tags: { $in: tags } }).populate("creator", "name img").populate("episodes");
-        res.status(200).json(podcast);
-    } catch (err) {
-        next(err);
-    }
+  const tags = req.query.tags.split(",");
+  try {
+    const podcast = await Podcasts.find({ tags: { $in: tags } })
+      .populate("creator", "name img")
+      .populate("episodes");
+    res.status(200).json(podcast);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const getByCategory = async (req, res, next) => {
-    const query = req.query.q;
-    try {
-        const podcast = await Podcasts.find({ 
-            
-        category: { $regex: query, $options: "i" },
-        }).populate("creator", "name img").populate("episodes");
-        res.status(200).json(podcast);
-    } catch (err) {
-        next(err);
-    }
+  const query = req.query.q;
+  try {
+    const podcast = await Podcasts.find({
+      category: { $regex: query, $options: "i" },
+    })
+      .populate("creator", "name img")
+      .populate("episodes");
+    res.status(200).json(podcast);
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const search = async (req, res, next) => {
-    const query = req.query.q;
-    try {
-      const podcast = await Podcasts.find({
-        name: { $regex: query, $options: "i" },
-      }).populate("creator", "name img").populate("episodes").limit(40);
-      res.status(200).json(podcast);
-    } catch (err) {
-      next(err);
-    }
-  };
+  const query = req.query.q;
+  try {
+    const podcast = await Podcasts.find({
+      name: { $regex: query, $options: "i" },
+    })
+      .populate("creator", "name img")
+      .populate("episodes")
+      .limit(40);
+    res.status(200).json(podcast);
+  } catch (err) {
+    next(err);
+  }
+};
