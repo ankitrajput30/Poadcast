@@ -20,7 +20,7 @@ The application is built using the following technologies:
 - Node Js
 - Mongo DB
 - Google Auth
-- Firebase
+- Cloudinary
 
 ### Start the react app
 Go to client folder
@@ -33,7 +33,7 @@ npm install
 ```
 Start the react app
 ```
-npm start
+npm start dev
 ```
 
 ### Start the backend server
